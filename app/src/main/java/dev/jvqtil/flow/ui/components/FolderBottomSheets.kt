@@ -296,7 +296,8 @@ fun RenameFolderBottomSheet(
     onValueChange: (String) -> Unit,
     onSave: () -> Unit,
     onReset: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    showReset: Boolean = true
 ) {
     FolderEditorBottomSheet(
         title = stringResource(R.string.rename_folder_label),
@@ -306,18 +307,20 @@ fun RenameFolderBottomSheet(
         onAction = onSave,
         onDismiss = onDismiss,
         extraContent = {
-            SheetRow(
-                onClick = onReset,
-                title = stringResource(R.string.reset_folder_name_label),
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-            )
+            if (showReset) {
+                SheetRow(
+                    onClick = onReset,
+                    title = stringResource(R.string.reset_folder_name_label),
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                )
+            }
         }
     )
 }

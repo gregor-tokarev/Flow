@@ -799,7 +799,8 @@ fun HomeScreen(
             onDismiss = {
                 renameTarget = null
                 renameText = ""
-            }
+            },
+            showReset = folder.id == MASTER_FOLDER_ID
         )
     }
 
