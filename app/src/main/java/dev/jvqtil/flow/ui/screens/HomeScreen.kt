@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -105,7 +106,9 @@ fun HomeScreen(
     onToggleTaskNote: (String) -> Unit,
     onMoveEntryToFolder: (String, String) -> Unit
 ) {
-    val listState = rememberLazyListState()
+    val listStates = remember {
+        mutableMapOf<String, LazyListState>()
+    }
     val folderListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
@@ -165,12 +168,7 @@ fun HomeScreen(
         closeActionsToken++
     }
 
-    val reorderableState = rememberReorderableLazyListState(
-        lazyListState = listState
-    ) { from, to ->
-        val fromId = from.key as String
-        val toId = to.key as String
-
+    fun reorderEntries(fromId: String, toId: String) {
         val fromIndex = localEntries.indexOfFirst {
             it.id == fromId
         }
@@ -281,15 +279,17 @@ fun HomeScreen(
             }
         }
 
-    LaunchedEffect(shouldScrollToTop) {
+    LaunchedEffect(shouldScrollToTop, selectedFolderId) {
         if (!shouldScrollToTop) {
             return@LaunchedEffect
         }
 
         delay(100.milliseconds)
 
-        if (listState.layoutInfo.totalItemsCount > 0) {
-            listState.animateScrollToItem(0)
+        listStates[selectedFolderId]?.let { listState ->
+            if (listState.layoutInfo.totalItemsCount > 0) {
+                listState.animateScrollToItem(0)
+            }
         }
 
         onScrollToTopHandled()
@@ -598,6 +598,20 @@ fun HomeScreen(
                 },
                 label = "folderContent"
             ) { folderId ->
+                val listState = remember(folderId) {
+                    listStates.getOrPut(folderId) {
+                        LazyListState()
+                    }
+                }
+
+                val reorderableState = rememberReorderableLazyListState(
+                    lazyListState = listState
+                ) { from, to ->
+                    val fromId = from.key as String
+                    val toId = to.key as String
+
+                    reorderEntries(fromId, toId)
+                }
 
                 val folderEntries = remember(
                     visibleEntries,
@@ -701,7 +715,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    .height(8.dp)
+                    .height(4.dp)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
