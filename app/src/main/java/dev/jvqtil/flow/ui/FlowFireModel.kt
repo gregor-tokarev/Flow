@@ -240,13 +240,17 @@ class FlowFireModel(
                 )
 
                 _uiState.update { state ->
-                    state.copy(
-                        selectedFolderId = if (state.selectedFolderId == folderId) {
-                            null
+                    val nextSelectedFolderId =
+                        if (state.selectedFolderId == folderId) {
+                            state.folders
+                                .firstOrNull { it.id != folderId }
+                                ?.id
                         } else {
                             state.selectedFolderId
-                        },
+                        }
 
+                    state.copy(
+                        selectedFolderId = nextSelectedFolderId,
                         undoOperation = UndoOperation.FolderDeleted(
                             snapshot
                         )

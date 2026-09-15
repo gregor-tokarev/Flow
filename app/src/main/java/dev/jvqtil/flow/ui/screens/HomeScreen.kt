@@ -106,14 +106,15 @@ fun HomeScreen(
     onMoveEntryToFolder: (String, String) -> Unit
 ) {
     val listState = rememberLazyListState()
+    val folderListState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
-    var localEntries by remember {
+    var localEntries by remember(entries) {
         mutableStateOf(entries)
     }
 
-    LaunchedEffect(entries) {
-        localEntries = entries
+    var localFolders by remember(folders) {
+        mutableStateOf(folders)
     }
 
     var closeActionsToken by remember {
@@ -140,14 +141,6 @@ fun HomeScreen(
         mutableIntStateOf(1)
     }
 
-    var localFolders by remember {
-        mutableStateOf(folders)
-    }
-
-    LaunchedEffect(folders) {
-        localFolders = folders
-    }
-
     var renameTarget by remember {
         mutableStateOf<FolderUiModel?>(null)
     }
@@ -166,20 +159,6 @@ fun HomeScreen(
 
     var createFolderForMove by remember {
         mutableStateOf(false)
-    }
-
-    LaunchedEffect(shouldScrollToTop) {
-        if (!shouldScrollToTop) {
-            return@LaunchedEffect
-        }
-
-        delay(100.milliseconds)
-
-        if (listState.layoutInfo.totalItemsCount > 0) {
-            listState.animateScrollToItem(0)
-        }
-
-        onScrollToTopHandled()
     }
 
     fun closeActions() {
@@ -214,23 +193,30 @@ fun HomeScreen(
         }
     }
 
-    val visibleEntries = buildList {
-        addAll(localEntries)
+    val visibleEntries = remember(
+        localEntries,
+        pendingDeletedEntries,
+        deletedEntriesPositions
+    ) {
+        buildList {
+            addAll(localEntries)
 
-        pendingDeletedEntries.values.forEach { deleted ->
-            if (none { it.id == deleted.id }) {
-                val position = deletedEntriesPositions[deleted.id] ?: size
+            pendingDeletedEntries.values.forEach { deleted ->
+                if (none { it.id == deleted.id }) {
+                    val position =
+                        deletedEntriesPositions[deleted.id] ?: size
 
-                add(
-                    position.coerceIn(0, size),
-                    EntryUiModel(
-                        id = deleted.id,
-                        text = deleted.text,
-                        type = deleted.type,
-                        completed = deleted.completed,
-                        folderId = deleted.folderId
+                    add(
+                        position.coerceIn(0, size),
+                        EntryUiModel(
+                            id = deleted.id,
+                            text = deleted.text,
+                            type = deleted.type,
+                            completed = deleted.completed,
+                            folderId = deleted.folderId
+                        )
                     )
-                )
+                }
             }
         }
     }
@@ -238,27 +224,32 @@ fun HomeScreen(
     LaunchedEffect(
         localEntries,
         entries,
-        deletingEntriesIds
+        deletingEntriesIds,
+        selectedFolderId
     ) {
         if (deletingEntriesIds.isNotEmpty()) {
             return@LaunchedEffect
         }
 
-        if (localEntries.map { it.id } != entries.map { it.id }) {
-            delay(350.milliseconds)
+        if (localEntries.map { it.id } == entries.map { it.id }) {
+            return@LaunchedEffect
+        }
 
-            if (
-                deletingEntriesIds.isEmpty() &&
-                localEntries.map { it.id } != entries.map { it.id }
-            ) {
-                onReorderEntries(
-                    localEntries.map { it.id }
-                )
-            }
+        delay(350.milliseconds)
+
+        if (
+            deletingEntriesIds.isEmpty() &&
+            localEntries.map { it.id } != entries.map { it.id }
+        ) {
+            onReorderEntries(
+                localEntries
+                    .asSequence()
+                    .filter { it.folderId == selectedFolderId }
+                    .map { it.id }
+                    .toList()
+            )
         }
     }
-
-    val folderListState = rememberLazyListState()
 
     val reorderableFolderState =
         rememberReorderableLazyListState(
@@ -289,6 +280,20 @@ fun HomeScreen(
                     }
             }
         }
+
+    LaunchedEffect(shouldScrollToTop) {
+        if (!shouldScrollToTop) {
+            return@LaunchedEffect
+        }
+
+        delay(100.milliseconds)
+
+        if (listState.layoutInfo.totalItemsCount > 0) {
+            listState.animateScrollToItem(0)
+        }
+
+        onScrollToTopHandled()
+    }
 
     Box(
         modifier = Modifier
@@ -366,7 +371,7 @@ fun HomeScreen(
                             ReorderableItem(
                                 state = reorderableFolderState,
                                 key = folder.id
-                            ) { _ ->
+                            ) {
                                 val displayName =
                                     if (
                                         folder.id == MASTER_FOLDER_ID &&
@@ -469,21 +474,35 @@ fun HomeScreen(
                                                         )
                                                     }
                                                 ),
-                                            contentAlignment = Alignment.Center
+                                            contentAlignment =
+                                                Alignment.Center
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Default.DragIndicator,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp),
-                                                tint = if (selected) {
-                                                    MaterialTheme.colorScheme.onPrimary.copy(
-                                                        alpha = 0.75f
-                                                    )
-                                                } else {
-                                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                                        alpha = 0.65f
-                                                    )
-                                                }
+                                                imageVector =
+                                                    Icons.Default
+                                                        .DragIndicator,
+                                                contentDescription =
+                                                    null,
+                                                modifier =
+                                                    Modifier.size(16.dp),
+                                                tint =
+                                                    if (selected) {
+                                                        MaterialTheme
+                                                            .colorScheme
+                                                            .onPrimary
+                                                            .copy(
+                                                                alpha =
+                                                                    0.75f
+                                                            )
+                                                    } else {
+                                                        MaterialTheme
+                                                            .colorScheme
+                                                            .onSurfaceVariant
+                                                            .copy(
+                                                                alpha =
+                                                                    0.65f
+                                                            )
+                                                    }
                                             )
                                         }
 
@@ -531,9 +550,10 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
-                    top = when {
-                        foldersEnabled -> 116.dp
-                        else -> 64.dp
+                    top = if (foldersEnabled) {
+                        116.dp
+                    } else {
+                        64.dp
                     },
                     start = 16.dp,
                     end = 16.dp
@@ -542,31 +562,50 @@ fun HomeScreen(
             AnimatedContent(
                 targetState = selectedFolderId,
                 transitionSpec = {
-                    val direction = folderSwitchDirection
-
-                    (
-                            slideInHorizontally(
-                                initialOffsetX = { direction * it / 4 },
-                                animationSpec = tween(250)
-                            ) +
-                                    fadeIn(
-                                        animationSpec = tween(180)
-                                    )
-                            ).togetherWith(
-                            slideOutHorizontally(
-                                targetOffsetX = { -direction * it / 4 },
-                                animationSpec = tween(250)
-                            ) +
-                                    fadeOut(
-                                        animationSpec = tween(160)
-                                    )
+                    if (initialState == targetState) {
+                        fadeIn(
+                            animationSpec = tween(0)
+                        ).togetherWith(
+                            fadeOut(
+                                animationSpec = tween(0)
+                            )
                         )
+                    } else {
+                        val direction = folderSwitchDirection
+
+                        (
+                                slideInHorizontally(
+                                    initialOffsetX = {
+                                        direction * it / 6
+                                    },
+                                    animationSpec = tween(280)
+                                ) +
+                                        fadeIn(
+                                            animationSpec = tween(220)
+                                        )
+                                ).togetherWith(
+                                slideOutHorizontally(
+                                    targetOffsetX = {
+                                        -direction * it / 6
+                                    },
+                                    animationSpec = tween(220)
+                                ) +
+                                        fadeOut(
+                                            animationSpec = tween(170)
+                                        )
+                            )
+                    }
                 },
                 label = "folderContent"
             ) { folderId ->
 
-                val folderEntries = visibleEntries.filter {
-                    it.folderId == folderId
+                val folderEntries = remember(
+                    visibleEntries,
+                    folderId
+                ) {
+                    visibleEntries.filter {
+                        it.folderId == folderId
+                    }
                 }
 
                 LazyColumn(
