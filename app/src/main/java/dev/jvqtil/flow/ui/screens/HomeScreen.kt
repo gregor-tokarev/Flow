@@ -2,7 +2,6 @@ package dev.jvqtil.flow.ui.screens
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -12,29 +11,20 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,9 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.jvqtil.flow.R
 import dev.jvqtil.flow.data.Entry
@@ -66,6 +54,7 @@ import dev.jvqtil.flow.ui.components.AddButton
 import dev.jvqtil.flow.ui.components.EntryCard
 import dev.jvqtil.flow.ui.components.FolderActionsBottomSheet
 import dev.jvqtil.flow.ui.components.FolderChoiceBottomSheet
+import dev.jvqtil.flow.ui.components.FoldersBar
 import dev.jvqtil.flow.ui.components.NewFolderBottomSheet
 import dev.jvqtil.flow.ui.components.RenameFolderBottomSheet
 import dev.jvqtil.flow.ui.components.UndoPopup
@@ -249,36 +238,6 @@ fun HomeScreen(
         }
     }
 
-    val reorderableFolderState =
-        rememberReorderableLazyListState(
-            lazyListState = folderListState
-        ) { from, to ->
-            val fromId = from.key as String
-            val toId = to.key as String
-
-            val fromIndex = localFolders.indexOfFirst {
-                it.id == fromId
-            }
-
-            val toIndex = localFolders.indexOfFirst {
-                it.id == toId
-            }
-
-            if (
-                fromIndex >= 0 &&
-                toIndex >= 0 &&
-                fromIndex != toIndex
-            ) {
-                localFolders =
-                    localFolders.toMutableList().apply {
-                        add(
-                            toIndex,
-                            removeAt(fromIndex)
-                        )
-                    }
-            }
-        }
-
     LaunchedEffect(shouldScrollToTop, selectedFolderId) {
         if (!shouldScrollToTop) {
             return@LaunchedEffect
@@ -330,219 +289,64 @@ fun HomeScreen(
         }
 
         if (foldersEnabled) {
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
                         top = 64.dp,
                         start = 16.dp,
                         end = 16.dp
-                    ),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    )
             ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(38.dp)
-                ) {
-                    LazyRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        state = folderListState,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(
-                            items = localFolders,
-                            key = { it.id }
-                        ) { folder ->
-                            val selected =
-                                folder.id == selectedFolderId
-
-                            val cornerRadius by animateDpAsState(
-                                targetValue = if (selected) {
-                                    16.dp
-                                } else {
-                                    14.dp
-                                },
-                                animationSpec = tween(200),
-                                label = "folderCornerRadius"
-                            )
-
-                            ReorderableItem(
-                                state = reorderableFolderState,
-                                key = folder.id
-                            ) {
-                                val displayName =
-                                    if (
-                                        folder.id == MASTER_FOLDER_ID &&
-                                        folder.name.isBlank()
-                                    ) {
-                                        stringResource(R.string.master_folder_label)
-                                    } else {
-                                        folder.name
-                                    }
-
-                                Box(
-                                    modifier = Modifier
-                                        .background(
-                                            color = if (selected) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                MaterialTheme.colorScheme.surfaceContainer
-                                            },
-                                            shape = RoundedCornerShape(cornerRadius)
-                                        )
-                                ) {
-                                    Row(
-                                        modifier = Modifier.height(38.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .pointerInput(
-                                                    folder.id,
-                                                    selected
-                                                ) {
-                                                    detectTapGestures(
-                                                        onTap = {
-                                                            if (!selected) {
-                                                                val currentIndex =
-                                                                    localFolders.indexOfFirst {
-                                                                        it.id == selectedFolderId
-                                                                    }
-
-                                                                val newIndex =
-                                                                    localFolders.indexOfFirst {
-                                                                        it.id == folder.id
-                                                                    }
-
-                                                                folderSwitchDirection =
-                                                                    if (newIndex > currentIndex) {
-                                                                        1
-                                                                    } else {
-                                                                        -1
-                                                                    }
-
-                                                                closeActions()
-                                                                onSelectFolder(folder.id)
-                                                            }
-                                                        },
-                                                        onLongPress = {
-                                                            closeActions()
-
-                                                            folderActionTarget = folder
-                                                            renameTarget = null
-                                                            renameText = ""
-                                                        }
-                                                    )
-                                                }
-                                                .padding(
-                                                    start = 16.dp,
-                                                    end = 4.dp
-                                                ),
-                                            contentAlignment = Alignment.CenterStart
-                                        ) {
-                                            Text(
-                                                text = displayName,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                color = if (selected) {
-                                                    MaterialTheme.colorScheme.onPrimary
-                                                } else {
-                                                    MaterialTheme.colorScheme.onSurface
-                                                },
-                                                style = MaterialTheme.typography.labelLarge
-                                            )
-                                        }
-
-                                        Box(
-                                            modifier = Modifier
-                                                .size(28.dp)
-                                                .longPressDraggableHandle(
-                                                    onDragStarted = {
-                                                        folderActionTarget = null
-                                                        renameTarget = null
-                                                        renameText = ""
-
-                                                        closeActions()
-                                                    },
-                                                    onDragStopped = {
-                                                        onReorderFolders(
-                                                            localFolders.map {
-                                                                it.id
-                                                            }
-                                                        )
-                                                    }
-                                                ),
-                                            contentAlignment =
-                                                Alignment.Center
-                                        ) {
-                                            Icon(
-                                                imageVector =
-                                                    Icons.Default
-                                                        .DragIndicator,
-                                                contentDescription =
-                                                    null,
-                                                modifier =
-                                                    Modifier.size(16.dp),
-                                                tint =
-                                                    if (selected) {
-                                                        MaterialTheme
-                                                            .colorScheme
-                                                            .onPrimary
-                                                            .copy(
-                                                                alpha =
-                                                                    0.75f
-                                                            )
-                                                    } else {
-                                                        MaterialTheme
-                                                            .colorScheme
-                                                            .onSurfaceVariant
-                                                            .copy(
-                                                                alpha =
-                                                                    0.65f
-                                                            )
-                                                    }
-                                            )
-                                        }
-
-                                        Spacer(
-                                            modifier = Modifier.width(4.dp)
-                                        )
-                                    }
+                FoldersBar(
+                    folders = localFolders,
+                    selectedFolderId = selectedFolderId,
+                    folderListState = folderListState,
+                    onSelectFolder = { folderId ->
+                        folderSwitchDirection =
+                            if (
+                                localFolders.indexOfFirst {
+                                    it.id == folderId
+                                } >
+                                localFolders.indexOfFirst {
+                                    it.id == selectedFolderId
                                 }
+                            ) {
+                                1
+                            } else {
+                                -1
                             }
-                        }
-                    }
-                }
 
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceContainer,
-                            shape = RoundedCornerShape(14.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    IconButton(
-                        onClick = {
-                            closeActions()
-                            newFolderName = ""
-                            createFolderForMove = false
-                            showNewFolderSheet = true
-                        },
-                        modifier = Modifier.size(38.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription =
-                                stringResource(R.string.new_folder_label),
-                            modifier = Modifier.size(22.dp),
-                            tint = MaterialTheme.colorScheme.onSurface
+                        closeActions()
+                        onSelectFolder(folderId)
+                    },
+                    onFolderLongPress = { folder ->
+                        closeActions()
+                        folderActionTarget = folder
+                        renameTarget = null
+                        renameText = ""
+                    },
+                    onNewFolder = {
+                        closeActions()
+                        newFolderName = ""
+                        createFolderForMove = false
+                        showNewFolderSheet = true
+                    },
+                    onLocalFoldersChange = { newFolders ->
+                        localFolders = newFolders
+                    },
+                    onDragStarted = {
+                        folderActionTarget = null
+                        renameTarget = null
+                        renameText = ""
+                        closeActions()
+                    },
+                    onDragStopped = {
+                        onReorderFolders(
+                            localFolders.map { it.id }
                         )
                     }
-                }
+                )
             }
         }
 
