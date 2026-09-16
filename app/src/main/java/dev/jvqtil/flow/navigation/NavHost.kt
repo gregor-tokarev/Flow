@@ -42,6 +42,7 @@ import dev.jvqtil.flow.data.ENTRY_TYPE_NOTE
 import dev.jvqtil.flow.data.ENTRY_TYPE_TASK
 import dev.jvqtil.flow.data.Feature
 import dev.jvqtil.flow.data.FlowRepository
+import dev.jvqtil.flow.data.MASTER_FOLDER_ID
 import dev.jvqtil.flow.data.backup.BackupManager
 import dev.jvqtil.flow.data.backup.BackupPreview
 import dev.jvqtil.flow.ui.FlowFireModel
@@ -113,12 +114,6 @@ fun FlowNavHost(
     LaunchedEffect(Unit) {
         checkForUpdates(false)
     }
-
-    val currentFolderId by AppPreferences
-        .observeCurrentFolderId(context)
-        .collectAsStateWithLifecycle(
-            initialValue = null
-        )
 
     var importUri by remember {
         mutableStateOf<Uri?>(null)
@@ -243,6 +238,13 @@ fun FlowNavHost(
         .uiState
         .collectAsStateWithLifecycle()
 
+    val currentFolderId by
+    AppPreferences
+        .observeCurrentFolderId(context)
+        .collectAsStateWithLifecycle(
+            initialValue = null
+        )
+
     var shouldScrollHomeToTop by remember {
         mutableStateOf(false)
     }
@@ -296,6 +298,28 @@ fun FlowNavHost(
             initialValue = KeyboardMode.NORMAL
         )
 
+    LaunchedEffect(
+        currentFolderId,
+        uiState.folders
+    ) {
+        val validFolderId =
+            currentFolderId
+                ?.takeIf { id ->
+                    uiState.folders.any { it.id == id }
+                }
+                ?: uiState.folders.firstOrNull()?.id
+
+        if (
+            validFolderId != null &&
+            validFolderId != currentFolderId
+        ) {
+            AppPreferences.setCurrentFolderId(
+                context = context,
+                folderId = validFolderId
+            )
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = HOME_ROUTE,
@@ -339,53 +363,20 @@ fun FlowNavHost(
         }
     ) {
         composable(HOME_ROUTE) {
-            var currentFolderInitialized by remember {
-                mutableStateOf(false)
-            }
-
-            LaunchedEffect(currentFolderId, uiState.folders) {
-                val folderId = currentFolderId
-
-                if (
-                    !currentFolderInitialized &&
-                    folderId != null &&
-                    uiState.folders.any { folder ->
-                        folder.id == folderId
-                    }
-                ) {
-                    flowFireModel.selectFolder(folderId)
-                    currentFolderInitialized = true
-                }
-            }
-
             val selectedFolderId =
-                if (!currentFolderInitialized) {
-                    currentFolderId?.takeIf { id ->
-                        uiState.folders.any { folder ->
-                            folder.id == id
-                        }
+                currentFolderId
+                    ?.takeIf { id ->
+                        uiState.folders.any { it.id == id }
                     }
-                        ?: uiState.selectedFolderId?.takeIf { id ->
-                            uiState.folders.any { folder ->
-                                folder.id == id
-                            }
-                        }
-                        ?: uiState.folders.firstOrNull()?.id
-                } else {
-                    uiState.selectedFolderId?.takeIf { id ->
-                        uiState.folders.any { folder ->
-                            folder.id == id
-                        }
-                    }
-                        ?: uiState.folders.firstOrNull()?.id
-                }
+                    ?: uiState.folders.firstOrNull()?.id
+                    ?: MASTER_FOLDER_ID
 
             HomeScreen(
                 foldersEnabled = foldersEnabled,
                 swipeGesturesEnabled = swipeGesturesEnabled,
                 entries = uiState.entries,
                 folders = uiState.folders,
-                selectedFolderId = selectedFolderId ?: "",
+                selectedFolderId = selectedFolderId,
                 previewLines = previewLines,
                 shouldScrollToTop = shouldScrollHomeToTop,
                 onScrollToTopHandled = {
@@ -396,8 +387,6 @@ fun FlowNavHost(
                 restoringEntryId = uiState.restoringEntryId,
                 deletingEntriesIds = uiState.deletingEntriesIds,
                 onSelectFolder = { folderId ->
-                    flowFireModel.selectFolder(folderId)
-
                     scope.launch {
                         AppPreferences.setCurrentFolderId(
                             context = context,
@@ -415,6 +404,23 @@ fun FlowNavHost(
                     )
                 },
                 onDeleteFolder = { id ->
+                    val nextFolderId =
+                        uiState.folders
+                            .firstOrNull { it.id != id }
+                            ?.id
+
+                    if (
+                        id == currentFolderId &&
+                        nextFolderId != null
+                    ) {
+                        scope.launch {
+                            AppPreferences.setCurrentFolderId(
+                                context = context,
+                                folderId = nextFolderId
+                            )
+                        }
+                    }
+
                     flowFireModel.deleteFolder(id)
                 },
                 onUndo = {
@@ -453,13 +459,8 @@ fun FlowNavHost(
                     navController.navigate(SETTINGS_ROUTE)
                 },
                 onReorderEntries = { entryIds ->
-                    val folderId =
-                        uiState.selectedFolderId
-                            ?: selectedFolderId
-                            ?: return@HomeScreen
-
                     flowFireModel.updateEntriesPositions(
-                        folderId = folderId,
+                        folderId = selectedFolderId,
                         entryIds = entryIds
                     )
                 },
@@ -628,7 +629,13 @@ fun FlowNavHost(
                     when {
                         isNew -> {
                             flowFireModel.createEntry(
-                                type = defaultEntryType
+                                type = defaultEntryType,
+                                folderId =
+                                    currentFolderId
+                                        ?: uiState.folders
+                                            .firstOrNull()
+                                            ?.id
+                                        ?: MASTER_FOLDER_ID
                             )
                         }
 

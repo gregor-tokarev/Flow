@@ -47,7 +47,6 @@ sealed interface UndoOperation {
 data class FlowUiState(
     val entries: List<EntryUiModel> = emptyList(),
     val folders: List<FolderUiModel> = emptyList(),
-    val selectedFolderId: String? = null,
     val pendingDeletedEntries: Map<String, Entry> = emptyMap(),
     val undoOperation: UndoOperation? = null,
     val restoringEntryId: String? = null,
@@ -90,25 +89,11 @@ class FlowFireModel(
     private fun observeFolders() {
         viewModelScope.launch {
             repository.observeFolders().collect { folders ->
-
-                _uiState.update { state ->
-
-                    val selectedFolderId = state.selectedFolderId
-
-                    val selectedExists = selectedFolderId != null && folders.any {
-                        it.id == selectedFolderId
-                    }
-
-                    state.copy(
+                _uiState.update {
+                    it.copy(
                         folders = folders.map(
                             ::toUiModel
-                        ),
-
-                        selectedFolderId = if (selectedExists) {
-                            selectedFolderId
-                        } else {
-                            folders.firstOrNull()?.id
-                        }
+                        )
                     )
                 }
             }
@@ -177,16 +162,6 @@ class FlowFireModel(
         }
     }
 
-    fun selectFolder(
-        folderId: String
-    ) {
-        _uiState.update {
-            it.copy(
-                selectedFolderId = folderId
-            )
-        }
-    }
-
     fun updateFoldersPositions(
         folderIds: List<String>
     ) {
@@ -240,17 +215,7 @@ class FlowFireModel(
                 )
 
                 _uiState.update { state ->
-                    val nextSelectedFolderId =
-                        if (state.selectedFolderId == folderId) {
-                            state.folders
-                                .firstOrNull { it.id != folderId }
-                                ?.id
-                        } else {
-                            state.selectedFolderId
-                        }
-
                     state.copy(
-                        selectedFolderId = nextSelectedFolderId,
                         undoOperation = UndoOperation.FolderDeleted(
                             snapshot
                         )
@@ -269,13 +234,14 @@ class FlowFireModel(
     }
 
     fun createEntry(
-        type: String = ENTRY_TYPE_NOTE
+        type: String = ENTRY_TYPE_NOTE,
+        folderId: String
     ): EntryUiModel {
         return EntryUiModel(
             id = UUID.randomUUID().toString(),
             text = "",
             type = type,
-            folderId = _uiState.value.selectedFolderId ?: "",
+            folderId = folderId,
             completed = false
         )
     }
@@ -690,12 +656,12 @@ private fun trimEmptyLines(
 ): String {
 
     return text.replace(
-            Regex(
-                """\A(?:[ \t]*\r?\n)+"""
-            ), ""
+        Regex(
+            """\A(?:[ \t]*\r?\n)+"""
+        ), ""
     ).replace(
-            Regex(
-                """(?:\r?\n[ \t]*)+\z"""
-            ), ""
-        )
+        Regex(
+            """(?:\r?\n[ \t]*)+\z"""
+        ), ""
+    )
 }
