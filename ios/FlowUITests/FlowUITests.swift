@@ -99,6 +99,22 @@ final class FlowUITests: XCTestCase {
         XCTAssertEqual(app.tables["entries"].cells.count, 0)
     }
 
+    func testEditorFlushesWhenGoingBackAndBackgrounding() {
+        app.buttons["newEntry"].tap()
+        let editor = app.textViews["entryText"]
+        editor.typeText("Saved when leaving")
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.staticTexts["Saved when leaving"].waitForExistence(timeout: 5))
+        app.buttons["newEntry"].tap()
+        editor.typeText("Saved in the background")
+        XCUIDevice.shared.press(.home)
+        app.terminate()
+        app.launchArguments = ["--ui-testing"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Saved in the background"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Saved when leaving"].exists)
+    }
+
     private func capture(_ name: String) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name

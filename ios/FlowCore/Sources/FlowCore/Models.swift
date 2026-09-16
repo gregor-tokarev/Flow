@@ -117,18 +117,30 @@ public struct Library: Codable, Equatable {
 }
 
 public enum FlowDate {
-    public static func string(_ date: Date = Date()) -> String {
+    // Backup work and UI saves share these formatters. Serialize access as well as
+    // keeping their configuration immutable; ISO8601DateFormatter isn't Sendable.
+    private static let lock = NSLock()
+    private static let fractional: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter.string(from: date)
+        return formatter
+    }()
+    private static let plain: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    public static func string(_ date: Date = Date()) -> String {
+        lock.lock()
+        defer { lock.unlock() }
+        return fractional.string(from: date)
     }
 
     public static func date(_ string: String) -> Date? {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = formatter.date(from: string) { return date }
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: string)
+        lock.lock()
+        defer { lock.unlock() }
+        return fractional.date(from: string) ?? plain.date(from: string)
     }
 }
 

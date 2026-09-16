@@ -99,6 +99,13 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         navigationController?.isModalInPresentation = busy
         navigationItem.rightBarButtonItem?.isEnabled = !busy
         tableView.reloadData()
+        if busy {
+            let spinner = UIActivityIndicatorView(style: .medium)
+            spinner.startAnimating()
+            navigationItem.leftBarButtonItem = UIBarButtonItem(customView: spinner)
+        } else {
+            navigationItem.leftBarButtonItem = nil
+        }
     }
 
     private func exportBackup() {
@@ -155,11 +162,15 @@ final class SettingsViewController: UITableViewController, UIDocumentPickerDeleg
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         alert.addAction(UIAlertAction(title: "Replace library", style: .destructive) { [weak self] _ in
             guard let self else { return }
-            do {
-                try self.store.restore(backup)
-                Preferences.currentFolder = Folder.masterID
-                self.dismiss(animated: true)
-            } catch { self.showError(error) }
+            self.setBusy(true)
+            Task {
+                do {
+                    try await self.store.restore(backup)
+                    Preferences.currentFolder = Folder.masterID
+                    self.setBusy(false)
+                    self.dismiss(animated: true)
+                } catch { self.setBusy(false); self.showError(error) }
+            }
         })
         present(alert, animated: true)
     }

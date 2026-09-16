@@ -4,6 +4,7 @@ import FlowCore
 final class HomeViewController: UITableViewController, UISearchResultsUpdating {
     private let store: FlowStore
     private var entries: [Entry] = []
+    private var entriesWithAttachments: Set<String> = []
     private let search = UISearchController(searchResultsController: nil)
     private let emptyLabel = UILabel()
     private var activeFolder: String? { Preferences.folders ? Preferences.currentFolder : nil }
@@ -59,6 +60,7 @@ final class HomeViewController: UITableViewController, UISearchResultsUpdating {
         tableView.backgroundColor = Theme.background
         let query = search.searchBar.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         entries = store.entries(in: activeFolder).filter { query.isEmpty || $0.text.localizedCaseInsensitiveContains(query) }
+        entriesWithAttachments = Set(store.library.attachments.map(\.entryId))
         tableView.reloadData()
         emptyLabel.text = query.isEmpty ? "Nothing here yet.\nTap + to add a note or task." : "No matching entries."
         tableView.backgroundView = entries.isEmpty ? emptyLabel : nil
@@ -114,7 +116,7 @@ final class HomeViewController: UITableViewController, UISearchResultsUpdating {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let entry = entries[indexPath.row]
         let cell = tableView.dequeueReusableCell(withIdentifier: "Entry", for: indexPath) as! EntryCell
-        cell.configure(entry, hasAttachments: !store.attachments(for: entry.id).isEmpty)
+        cell.configure(entry, hasAttachments: entriesWithAttachments.contains(entry.id))
         cell.onToggle = { [weak self] in
             guard let self else { return }
             self.performStoreAction { try self.store.toggleCompleted(entry.id) }

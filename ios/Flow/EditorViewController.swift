@@ -16,6 +16,9 @@ final class EditorViewController: UIViewController, UITextViewDelegate, UITableV
     private var attachmentsHeight: NSLayoutConstraint!
     private var previewItem: AttachmentPreview?
     private var errorPresented = false
+    private var pendingAutosave: DispatchWorkItem?
+    private var hasUnsavedChanges = false
+    private var discarded = false
 
     init(store: FlowStore, entry: Entry, isNew: Bool = false) {
         self.store = store
@@ -102,13 +105,24 @@ final class EditorViewController: UIViewController, UITextViewDelegate, UITableV
         if isNew && entry.text.isEmpty && attachments.isEmpty { textView.becomeFirstResponder() }
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // This also covers the navigation bar's Back button and interactive pop.
+        if !discarded { saveRequested() }
+    }
+
     func textViewDidChange(_ textView: UITextView) {
         entry.text = textView.text
         placeholder.isHidden = !entry.text.isEmpty
-        saveRequested()
+        hasUnsavedChanges = true
+        pendingAutosave?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.saveRequested() }
+        pendingAutosave = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
     }
 
     @objc private func saveRequested() {
+        guard !discarded else { return }
         do { try save() }
         catch {
             guard !errorPresented else { return }
@@ -120,9 +134,16 @@ final class EditorViewController: UIViewController, UITextViewDelegate, UITableV
     }
 
     private func save(force: Bool = false) throws {
+        pendingAutosave?.cancel()
+        pendingAutosave = nil
+        guard !discarded, force || hasUnsavedChanges else { return }
         if let saved = store.entry(entry.id) { entry.position = saved.position }
-        if !force && store.entry(entry.id) == nil && entry.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return }
+        if !force && store.entry(entry.id) == nil && entry.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            hasUnsavedChanges = false
+            return
+        }
         try store.save(entry)
+        hasUnsavedChanges = false
     }
 
     @objc private func done() {
@@ -135,6 +156,7 @@ final class EditorViewController: UIViewController, UITextViewDelegate, UITableV
     @objc private func kindChanged() {
         entry.type = kindControl.selectedSegmentIndex == 0 ? .note : .task
         if entry.type == .note { entry.completed = false }
+        hasUnsavedChanges = true
         saveRequested()
         updateToolbar()
     }
@@ -153,6 +175,9 @@ final class EditorViewController: UIViewController, UITextViewDelegate, UITableV
             guard let self else { return }
             do {
                 if self.store.entry(self.entry.id) != nil { try self.store.deleteEntry(self.entry.id) }
+                self.discarded = true
+                self.pendingAutosave?.cancel()
+                self.pendingAutosave = nil
                 self.navigationController?.popViewController(animated: true)
             } catch { self.showError(error) }
         })
@@ -170,6 +195,7 @@ final class EditorViewController: UIViewController, UITextViewDelegate, UITableV
 
     @objc private func toggleCompleted() {
         entry.completed.toggle()
+        hasUnsavedChanges = true
         saveRequested()
         updateToolbar()
     }
@@ -220,7 +246,8 @@ final class EditorViewController: UIViewController, UITextViewDelegate, UITableV
         let cell = UITableViewCell(style: .subtitle, reuseIdentifier: nil)
         var content = cell.defaultContentConfiguration()
         content.text = attachment.fileName
-        content.secondaryText = ByteCountFormatter.string(fromByteCount: attachment.size, countStyle: .file)
+        let fileExists = (try? store.attachmentURL(attachment)).map { FileManager.default.fileExists(atPath: $0.path) } ?? false
+        content.secondaryText = fileExists ? ByteCountFormatter.string(fromByteCount: attachment.size, countStyle: .file) : "File missing. Restore a backup to recover it."
         content.image = UIImage(systemName: "doc")
         cell.contentConfiguration = content
         cell.backgroundColor = .clear
@@ -232,7 +259,11 @@ final class EditorViewController: UIViewController, UITextViewDelegate, UITableV
         tableView.deselectRow(at: indexPath, animated: true)
         do {
             let attachment = attachments[indexPath.row]
-            previewItem = AttachmentPreview(url: try store.attachmentURL(attachment), title: attachment.fileName)
+            let url = try store.attachmentURL(attachment)
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                throw FlowError.invalid("This file is missing. Restore a backup to recover it.")
+            }
+            previewItem = AttachmentPreview(url: url, title: attachment.fileName)
             let preview = QLPreviewController()
             preview.dataSource = self
             present(preview, animated: true)

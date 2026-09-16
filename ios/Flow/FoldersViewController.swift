@@ -12,6 +12,7 @@ final class FoldersViewController: UITableViewController {
     private let store: FlowStore
     private let mode: Mode
     private var folders: [Folder] = []
+    private var entryCounts: [String: Int] = [:]
 
     init(store: FlowStore, mode: Mode) {
         self.store = store
@@ -30,7 +31,11 @@ final class FoldersViewController: UITableViewController {
         reload()
     }
 
-    private func reload() { folders = store.folders; tableView.reloadData() }
+    private func reload() {
+        folders = store.folders
+        entryCounts = store.library.entries.reduce(into: [:]) { $0[$1.folderId, default: 0] += 1 }
+        tableView.reloadData()
+    }
     @objc private func close() { dismiss(animated: true) }
     @objc private func addFolder() { editFolder(nil) }
 
@@ -54,7 +59,7 @@ final class FoldersViewController: UITableViewController {
         let cell = UITableViewCell(style: .value1, reuseIdentifier: nil)
         var content = cell.defaultContentConfiguration()
         content.text = folder.name
-        content.secondaryText = "\(store.entries(in: folder.id).count)"
+        content.secondaryText = "\(entryCounts[folder.id, default: 0])"
         content.image = UIImage(systemName: "folder")
         cell.contentConfiguration = content
         cell.accessoryType = folder.id == Preferences.currentFolder ? .checkmark : .none

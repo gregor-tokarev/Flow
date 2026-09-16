@@ -18,7 +18,7 @@ xcodebuild -project ios/Flow.xcodeproj -scheme Flow \
 
 ## Use
 
-- Tap **+** to create an entry. The editor saves each text change. Use the Note/Task control to change its type, and the circle button to complete a task.
+- Tap **+** to create an entry. The editor saves after a brief pause in typing and flushes pending changes when you leave or background the app. Use the Note/Task control to change its type, and the circle button to complete a task.
 - Swipe an entry for quick actions, or hold it for a context menu. Tap **Edit** and drag the handles to reorder entries.
 - Enable **Folders** in Settings to organize entries. The folder picker supports creation, renaming, deletion, and reordering. With folders disabled, the home screen shows all entries.
 - Attach files through the paperclip button and tap a file to preview it with Quick Look. The share button shares the entry text and its attachments.
@@ -30,6 +30,8 @@ xcodebuild -project ios/Flow.xcodeproj -scheme Flow \
 Settings can export and import `.flow` ZIP backups using the same version 1 manifest, JSON metadata, and attachment layout as Android. Version 5 legacy JSON backups can also be imported. Import shows the contents and asks before replacing the library. It validates the archive and stages attachment files before updating the saved library.
 
 Import limits are 32 MB per metadata file, 512 MB per attachment, and 2 GB of attachments per backup. Preferences are device-specific and are not included in backups.
+
+Restore copies files and writes the library away from the main thread. Other library changes are blocked until it finishes. If an attachment file is missing at startup, Flow warns you and preserves its record while keeping your notes accessible. If the library itself cannot be opened, **Start a new library** moves the original directory to a timestamped sibling in Application Support before creating a fresh library, so the original files remain available for recovery.
 
 The app stores `library.json` and attachment files under its Application Support directory. Saves replace the JSON file atomically. The app excludes this directory from device backups and uses no network services, analytics, account, or cloud sync. Export a `.flow` backup before uninstalling the app or moving to another device.
 

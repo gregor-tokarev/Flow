@@ -167,9 +167,16 @@ public enum FlowBackup {
     }
 
     private static func prepareLegacy(_ url: URL, directory: URL) throws -> PreparedBackup {
-        let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-        guard size <= metadataLimit else { throw FlowError.invalid("The legacy backup is too large.") }
-        let legacy = try JSONDecoder().decode(LegacyBackup.self, from: Data(contentsOf: url))
+        guard let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+              size >= 0, size <= metadataLimit else {
+            throw FlowError.invalid("The legacy backup is too large or its size cannot be read.")
+        }
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        // Bound the read too, in case the file grows after the metadata check.
+        let data = try handle.read(upToCount: Int(metadataLimit) + 1) ?? Data()
+        guard data.count <= metadataLimit else { throw FlowError.invalid("The legacy backup is too large.") }
+        let legacy = try JSONDecoder().decode(LegacyBackup.self, from: data)
         guard legacy.version == 5 else { throw FlowError.invalid("Only version 5 legacy backups are supported.") }
         var library = Library(folders: legacy.folders, entries: legacy.notes.map {
             Entry(id: $0.id, text: $0.text, createdAt: FlowDate.string(Date(timeIntervalSince1970: Double($0.createdAt) / 1000)),

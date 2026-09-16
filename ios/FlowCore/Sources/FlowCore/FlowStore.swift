@@ -3,6 +3,9 @@ import Foundation
 @MainActor
 public final class FlowStore {
     public private(set) var library: Library
+    public private(set) var isRestoring = false
+    /// Records whose files were absent at startup. Keep the metadata for recovery.
+    public private(set) var missingAttachments: [Attachment] = []
     public var onChange: (() -> Void)?
     public var undoActionName: String? { history.last?.name }
     public let directory: URL
@@ -19,8 +22,8 @@ public final class FlowStore {
             library = try JSONDecoder().decode(Library.self, from: Data(contentsOf: libraryURL))
             try library.validate()
             for attachment in library.attachments {
-                guard fileManager.fileExists(atPath: try attachmentURL(attachment).path) else {
-                    throw FlowError.invalid("An attachment is missing. Your library has not been changed.")
+                if !fileManager.fileExists(atPath: try attachmentURL(attachment).path) {
+                    missingAttachments.append(attachment)
                 }
             }
         } else {
@@ -160,6 +163,7 @@ public final class FlowStore {
     }
 
     public func addAttachment(from url: URL, to entryID: String, mimeType: String?) throws {
+        try requireWritable()
         let name = UUID().uuidString + "." + url.pathExtension
         let destination = attachmentsURL.appendingPathComponent(name)
         try fileManager.copyItem(at: url, to: destination)
@@ -187,6 +191,7 @@ public final class FlowStore {
     }
 
     public func undoDeletion() throws {
+        try requireWritable()
         guard let snapshot = history.last else { return }
         // Restore only deleted objects. Preserve edits made after the deletion.
         var restored = library
@@ -202,7 +207,31 @@ public final class FlowStore {
         onChange?()
     }
 
-    public func restore(_ backup: PreparedBackup) throws {
+    /// Copies and commits a prepared backup off the main actor. Concurrent mutations
+    /// are rejected until the disk commit and in-memory publication have both finished.
+    /// A confirmed restore runs to completion even if the awaiting task is cancelled.
+    public func restore(_ backup: PreparedBackup) async throws {
+        try await restore(backup, write: Self.writeRestore)
+    }
+
+    // The writer can be controlled by package tests to exercise concurrent mutations.
+    func restore(_ backup: PreparedBackup, write: @escaping @Sendable (PreparedBackup, URL) throws -> Library) async throws {
+        try requireWritable()
+        isRestoring = true
+        defer { isRestoring = false }
+        let directory = self.directory
+        let restored = try await Task.detached(priority: .userInitiated) {
+            try write(backup, directory)
+        }.value
+        library = restored
+        missingAttachments = []
+        history.removeAll()
+        onChange?()
+    }
+
+    nonisolated static func writeRestore(_ backup: PreparedBackup, directory: URL) throws -> Library {
+        let fileManager = FileManager.default
+        let attachmentsURL = directory.appendingPathComponent("attachments", isDirectory: true)
         var restored = backup.library
         var copied: [URL] = []
         do {
@@ -213,21 +242,20 @@ public final class FlowStore {
                 }
                 let name = UUID().uuidString + "." + URL(fileURLWithPath: attachment.fileName).pathExtension
                 let destination = attachmentsURL.appendingPathComponent(name)
-                try fileManager.copyItem(at: source, to: destination)
                 copied.append(destination)
+                try fileManager.copyItem(at: source, to: destination)
                 restored.attachments[index].storageName = name
             }
-            try persist(restored)
+            try writeLibrary(restored, to: directory.appendingPathComponent("library.json"))
         } catch {
             copied.forEach { try? fileManager.removeItem(at: $0) }
             throw error
         }
-        library = restored
-        history.removeAll()
-        onChange?()
+        return restored
     }
 
     private func change(undoName: String? = nil, _ mutation: (inout Library) throws -> Void) throws {
+        try requireWritable()
         var updated = library
         try mutation(&updated)
         try persist(updated)
@@ -247,9 +275,38 @@ public final class FlowStore {
     }
 
     private func persist(_ library: Library) throws {
+        try Self.writeLibrary(library, to: libraryURL)
+    }
+
+    private func requireWritable() throws {
+        guard !isRestoring else { throw FlowError.invalid("A backup is being restored. Please wait until it finishes.") }
+    }
+
+    nonisolated private static func writeLibrary(_ library: Library, to url: URL) throws {
         try library.validate()
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
-        try encoder.encode(library).write(to: libraryURL, options: .atomic)
+        try encoder.encode(library).write(to: url, options: .atomic)
+    }
+
+    /// Preserves an unreadable library by moving it beside the original directory.
+    /// If creating the new library fails, attempts to put the original back.
+    public static func startNewLibrary(at directory: URL) throws -> (store: FlowStore, preservedDirectory: URL?) {
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: directory.path) else {
+            return (try FlowStore(directory: directory), nil)
+        }
+        let timestamp = FlowDate.string().replacingOccurrences(of: ":", with: "-")
+        let preserved = directory.deletingLastPathComponent()
+            .appendingPathComponent("\(directory.lastPathComponent)-recovery-\(timestamp)-\(UUID().uuidString)", isDirectory: true)
+        try fileManager.moveItem(at: directory, to: preserved)
+        do {
+            return (try FlowStore(directory: directory), preserved)
+        } catch {
+            // Only the fresh, failed initialization is removed. Never delete the preserved copy.
+            try? fileManager.removeItem(at: directory)
+            try? fileManager.moveItem(at: preserved, to: directory)
+            throw error
+        }
     }
 }
