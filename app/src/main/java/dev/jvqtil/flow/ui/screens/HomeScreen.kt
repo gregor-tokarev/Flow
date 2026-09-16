@@ -360,9 +360,9 @@ fun HomeScreen(
 
                             val cornerRadius by animateDpAsState(
                                 targetValue = if (selected) {
-                                    18.dp
+                                    16.dp
                                 } else {
-                                    12.dp
+                                    14.dp
                                 },
                                 animationSpec = tween(200),
                                 label = "folderCornerRadius"
