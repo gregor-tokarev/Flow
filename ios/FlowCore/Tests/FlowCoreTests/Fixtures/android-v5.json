@@ -1,0 +1,26 @@
+{
+  "version": 5,
+  "folders": [
+    {
+      "id": "master",
+      "name": "Master",
+      "position": 0
+    },
+    {
+      "id": "work",
+      "name": "Work",
+      "position": 1
+    }
+  ],
+  "notes": [
+    {
+      "id": "note-1",
+      "text": "Hello from Android\nПривет 👋",
+      "createdAt": 1700000000123,
+      "position": 0,
+      "type": "note",
+      "completed": false,
+      "folderId": "master"
+    }
+  ]
+}

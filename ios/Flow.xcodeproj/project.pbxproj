@@ -1,0 +1,276 @@
+// !$*UTF8*$!
+{
+	"archiveVersion" = 1;
+	"classes" = {
+	};
+	"objectVersion" = 77;
+	"objects" = {
+		"000000000000000000000001" = {
+			"isa" = "PBXProject";
+			"attributes" = {
+				"BuildIndependentTargetsInParallel" = "YES";
+				"LastUpgradeCheck" = "1600";
+				"TargetAttributes" = {
+					"00000000000000000000000A" = {
+						"CreatedOnToolsVersion" = "16.0";
+					};
+					"000000000000000000000014" = {
+						"CreatedOnToolsVersion" = "16.0";
+						"TestTargetID" = "00000000000000000000000A";
+					};
+				};
+			};
+			"buildConfigurationList" = "00000000000000000000001E";
+			"compatibilityVersion" = "Xcode 16.0";
+			"developmentRegion" = "en";
+			"hasScannedForEncodings" = 0;
+			"knownRegions" = ("en", "Base");
+			"mainGroup" = "000000000000000000000002";
+			"minimizedProjectReferenceProxies" = 1;
+			"packageReferences" = ("000000000000000000000032");
+			"preferredProjectObjectVersion" = 77;
+			"productRefGroup" = "000000000000000000000005";
+			"projectDirPath" = "";
+			"projectRoot" = "";
+			"targets" = ("00000000000000000000000A", "000000000000000000000014");
+		};
+		"000000000000000000000002" = {
+			"isa" = "PBXGroup";
+			"children" = ("000000000000000000000003", "000000000000000000000004", "000000000000000000000005");
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000003" = {
+			"isa" = "PBXFileSystemSynchronizedRootGroup";
+			"exceptions" = ("000000000000000000000006");
+			"path" = "Flow";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000004" = {
+			"isa" = "PBXFileSystemSynchronizedRootGroup";
+			"path" = "FlowUITests";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000005" = {
+			"isa" = "PBXGroup";
+			"children" = ("00000000000000000000000B", "000000000000000000000015");
+			"name" = "Products";
+			"sourceTree" = "<group>";
+		};
+		"000000000000000000000006" = {
+			"isa" = "PBXFileSystemSynchronizedBuildFileExceptionSet";
+			"membershipExceptions" = ("Info.plist");
+			"target" = "00000000000000000000000A";
+		};
+		"00000000000000000000000A" = {
+			"isa" = "PBXNativeTarget";
+			"buildConfigurationList" = "000000000000000000000021";
+			"buildPhases" = ("00000000000000000000000C", "00000000000000000000000D", "00000000000000000000000E");
+			"buildRules" = ();
+			"dependencies" = ();
+			"fileSystemSynchronizedGroups" = ("000000000000000000000003");
+			"name" = "Flow";
+			"packageProductDependencies" = ("000000000000000000000033");
+			"productName" = "Flow";
+			"productReference" = "00000000000000000000000B";
+			"productType" = "com.apple.product-type.application";
+		};
+		"00000000000000000000000B" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.application";
+			"includeInIndex" = 0;
+			"path" = "Flow.app";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"00000000000000000000000C" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = ();
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"00000000000000000000000D" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = ("000000000000000000000034");
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"00000000000000000000000E" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = ();
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"000000000000000000000014" = {
+			"isa" = "PBXNativeTarget";
+			"buildConfigurationList" = "000000000000000000000024";
+			"buildPhases" = ("000000000000000000000016", "000000000000000000000017", "000000000000000000000018");
+			"buildRules" = ();
+			"dependencies" = ("000000000000000000000019");
+			"fileSystemSynchronizedGroups" = ("000000000000000000000004");
+			"name" = "FlowUITests";
+			"packageProductDependencies" = ();
+			"productName" = "FlowUITests";
+			"productReference" = "000000000000000000000015";
+			"productType" = "com.apple.product-type.bundle.ui-testing";
+		};
+		"000000000000000000000015" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.cfbundle";
+			"includeInIndex" = 0;
+			"path" = "FlowUITests.xctest";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"000000000000000000000016" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = ();
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"000000000000000000000017" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = ();
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"000000000000000000000018" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = ();
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"000000000000000000000019" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "00000000000000000000000A";
+			"targetProxy" = "00000000000000000000001A";
+		};
+		"00000000000000000000001A" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "000000000000000000000001";
+			"proxyType" = 1;
+			"remoteGlobalIDString" = "00000000000000000000000A";
+			"remoteInfo" = "Flow";
+		};
+		"00000000000000000000001E" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = ("00000000000000000000001F", "000000000000000000000020");
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"00000000000000000000001F" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"CLANG_ENABLE_MODULES" = "YES";
+				"CLANG_ENABLE_OBJC_ARC" = "YES";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "16.0";
+				"SDKROOT" = "iphoneos";
+				"SWIFT_VERSION" = "5.0";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf";
+				"ENABLE_TESTABILITY" = "YES";
+				"GCC_OPTIMIZATION_LEVEL" = "0";
+				"ONLY_ACTIVE_ARCH" = "YES";
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+			};
+		};
+		"000000000000000000000020" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"CLANG_ENABLE_MODULES" = "YES";
+				"CLANG_ENABLE_OBJC_ARC" = "YES";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "16.0";
+				"SDKROOT" = "iphoneos";
+				"SWIFT_VERSION" = "5.0";
+				"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+				"SWIFT_COMPILATION_MODE" = "wholemodule";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"VALIDATE_PRODUCT" = "YES";
+			};
+		};
+		"000000000000000000000021" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = ("000000000000000000000022", "000000000000000000000023");
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"000000000000000000000022" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"CURRENT_PROJECT_VERSION" = "1";
+				"GENERATE_INFOPLIST_FILE" = "NO";
+				"INFOPLIST_FILE" = "Flow/Info.plist";
+				"LD_RUNPATH_SEARCH_PATHS" = ("$(inherited)", "@executable_path/Frameworks");
+				"MARKETING_VERSION" = "1.0";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "dev.jvqtil.flow.ios";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SUPPORTS_MACCATALYST" = "NO";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+			};
+		};
+		"000000000000000000000023" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"CURRENT_PROJECT_VERSION" = "1";
+				"GENERATE_INFOPLIST_FILE" = "NO";
+				"INFOPLIST_FILE" = "Flow/Info.plist";
+				"LD_RUNPATH_SEARCH_PATHS" = ("$(inherited)", "@executable_path/Frameworks");
+				"MARKETING_VERSION" = "1.0";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "dev.jvqtil.flow.ios";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SUPPORTS_MACCATALYST" = "NO";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+			};
+		};
+		"000000000000000000000024" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = ("000000000000000000000025", "000000000000000000000026");
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"000000000000000000000025" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"CODE_SIGN_STYLE" = "Automatic";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "dev.jvqtil.flow.ios.uitests";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"TEST_TARGET_NAME" = "Flow";
+			};
+		};
+		"000000000000000000000026" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"CODE_SIGN_STYLE" = "Automatic";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "dev.jvqtil.flow.ios.uitests";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"TEST_TARGET_NAME" = "Flow";
+			};
+		};
+		"000000000000000000000032" = {
+			"isa" = "XCLocalSwiftPackageReference";
+			"relativePath" = "FlowCore";
+		};
+		"000000000000000000000033" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"productName" = "FlowCore";
+		};
+		"000000000000000000000034" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "000000000000000000000033";
+		};
+	};
+	"rootObject" = "000000000000000000000001";
+}

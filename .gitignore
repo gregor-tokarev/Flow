@@ -13,3 +13,12 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# iOS and Swift
+ios/.build/
+ios/FlowCore/.build/
+ios/FlowCore/.swiftpm/
+DerivedData/
+*.xcresult
+xcuserdata/
+*.xcuserstate

@@ -5,7 +5,7 @@
   Flow
 </h1>
 
-Notes & Tasks app for Android. Fully native. Just your stuff, no bullshit
+Notes & Tasks app for Android and iOS. Fully native. Just your stuff, no bullshit
 
 [**Features**](#features) · [**Usage**](https://github.com/jvqtil/Flow/wiki/Usage) · [**Screenshots**](#screenshots) · [**Contributing**](#contributing)
 
@@ -55,7 +55,11 @@ Notes & Tasks app for Android. Fully native. Just your stuff, no bullshit
 
 ## Contributing
 
-### Building
+### iOS
+
+Open [`ios/Flow.xcodeproj`](ios/Flow.xcodeproj) in Xcode 16 or later and run the **Flow** scheme on an iPhone or iPad simulator. The native UIKit app supports iOS 16+, local notes and tasks, folders, attachments, and Android-compatible `.flow` backups. See the [iOS guide](ios/README.md) for build commands, tests, and platform details.
+
+### Building Android
 Clone the repository and open it in Android Studio.
 
 Build it with:
